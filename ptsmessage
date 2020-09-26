@@ -17,6 +17,11 @@ if ! readonly PTY="$(ls /dev/pts/ 2>/dev/null)" || ! readonly PTY_LIST=(${PTY}) 
 	exit 1
 fi
 
+if [ "${#PTY_LIST[@]}" -le 2 ]; then
+	printf "${BLUE}No other shells.${RESET}\n"
+	exit 0
+fi
+
 printf "${BLUE}[+] Starting script${RESET}\n\n"
 
 for pts in "${PTY_LIST[@]}"; do
