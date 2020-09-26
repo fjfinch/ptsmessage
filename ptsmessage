@@ -10,10 +10,10 @@ if [ "$#" -ne 1 ]; then
         exit 1
 fi
 
-MESSAGE="$1"
+readonly MESSAGE="$1"
 
-if ! PTY="$(ls /dev/pts/ 2>/dev/null)" || ! declare -a PTY_LIST="(${PTY})" || ! OWN="$(basename "$(tty)")";then
-	printf "${RED}Nah. An error occurred.${RESET}\n"
+if ! readonly PTY="$(ls /dev/pts/ 2>/dev/null)" || ! readonly PTY_LIST=(${PTY}) || ! readonly OWN="$(basename "$(tty)")";then
+	printf "${RED}An error occurred.${RESET}\n"
 	exit 1
 fi
 
