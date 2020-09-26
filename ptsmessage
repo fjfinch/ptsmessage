@@ -1,0 +1,32 @@
+#!/bin/bash
+
+declare -r RED='\033[0;31m'
+declare -r BLUE='\033[1;36m'
+declare -r GREEN='\033[0;32m'
+declare -r RESET='\033[0m'
+
+if [ "$#" -ne 1 ]; then
+        printf "${RED}Missing message.${RESET} Usage: %s <MESSAGE>\n" "$(basename "$0")"
+        exit 1
+fi
+
+MESSAGE="$1"
+
+if ! PTY="$(ls /dev/pts/ 2>/dev/null)" || ! declare -a PTY_LIST="(${PTY})" || ! OWN="$(basename "$(tty)")";then
+	printf "${RED}Nah. An error occurred.${RESET}\n"
+	exit 1
+fi
+
+printf "${BLUE}[+] Starting script${RESET}\n\n"
+
+for pts in "${PTY_LIST[@]}"; do
+	if [[ "${pts}" =~ ^[0-9]+$ ]] && [ "${pts}" -ne "${OWN}" ]; then
+		if printf "${MESSAGE}" 2>/dev/null >/dev/pts/"${pts}"; then
+			printf "${GREEN}Message send to pts:%4s${RESET}\n" "${pts}"
+		else
+			printf "${RED}Error with pts:%9s${RESET}\n" "${pts}"
+		fi
+	fi
+done
+
+printf "\n${BLUE}[+] Done${RESET}\n"
