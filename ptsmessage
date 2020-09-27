@@ -1,26 +1,33 @@
 #!/bin/bash
 
-declare -r RED='\033[0;31m'
-declare -r BLUE='\033[1;36m'
-declare -r GREEN='\033[0;32m'
-declare -r RESET='\033[0m'
+#COLORED OUTPUT
+readonly RED='\033[0;31m'
+readonly BLUE='\033[1;36m'
+readonly GREEN='\033[0;32m'
+readonly RESET='\033[0m'
 
-if [ "$#" -ne 1 ]; then
-        printf "${RED}Missing message.${RESET} Usage: %s <MESSAGE>\n" "$(basename "$0")"
+#IS AN ARGUMENT GIVEN?
+if [ "${#}" -ne 1 ]; then
+        printf "${RED}Missing message${RESET}\nUsage: %s <MESSAGE>\n" "$(basename "${0}")"
         exit 1
 fi
 
-readonly MESSAGE="$1"
+#----------------------------------------------------------------------
 
+#VARIABLES
+readonly MESSAGE="${1}"
 if ! readonly PTY="$(ls /dev/pts/ 2>/dev/null)" || ! readonly PTY_LIST=(${PTY}) || ! readonly OWN="$(basename "$(tty)")";then
-	printf "${RED}An error occurred.${RESET}\n"
+	printf "${RED}An error occurred${RESET}\n"
 	exit 1
 fi
 
-if [ "${#PTY_LIST[@]}" -le 2 ]; then
-	printf "${BLUE}No other shells.${RESET}\n"
+#CHECK: ARE THERE OTHER SHELLS? (PTS)
+if [[ "${#PTY_LIST[@]}" -eq 2 && "${PTY_LIST[0]}" -eq "${OWN}" && "${PTY_LIST[1]}" == "ptmx" ]]; then
+	printf "${BLUE}No other shells${RESET}\n"
 	exit 0
 fi
+
+#----------------------------------------------------------------------
 
 printf "${BLUE}[+] Starting script${RESET}\n\n"
 
