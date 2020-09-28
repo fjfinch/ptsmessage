@@ -1,0 +1,90 @@
+#!/bin/bash
+
+#COLORED OUTPUT
+readonly RED='\033[0;31m'
+readonly BLUE='\033[1;36m'
+readonly GREEN='\033[0;32m'
+readonly RESET='\033[0m'
+
+usage () {
+	echo -e "Usage: $(basename "${0}") [-m|-k] [-a|-s]\n"
+	echo -e "-m:\tmessage pts"
+	echo -e "-k:\tkill pts"
+	echo -e "-a:\t(message/kill) all pts"
+	echo -e "-s:\t(message/kill) selected pts"
+}
+
+while getopts ":m:kas:" flag; do
+	case "${flag}" in
+		m)
+			readonly MESSAGE="${OPTARG}"
+		;;
+		k)
+			readonly KILL=1
+		;;
+		a)
+			readonly ALL="$(ls /dev/pts/)"
+			LIST=(${ALL})
+		;;
+		s)
+			readonly SELECTED="${OPTARG}"
+			#LIST=($(echo "${SELECTED}" | tr ',' ' '))
+			IFS="," read -r -a LIST <<< "${SELECTED}"
+		;;
+		\?)
+			echo "Invalid flag: -${OPTARG}" 1>&2
+			usage
+			exit 1
+		;;
+		:)
+			echo "Invalid option: -${OPTARG} requires an argument" 1>&2
+			usage
+			exit 1
+		;;
+	esac
+done
+
+if [[ (-v MESSAGE && -v KILL) || (-v ALL && -v SELECTED) || (! -v MESSAGE && ! -v KILL) || (! -v ALL && ! -v SELECTED) ]]; then
+	usage
+	exit 1
+fi
+
+#----------------------------------------------------------------------
+
+#OTHER VARIABLES
+readonly OWN="$(basename "$(tty)")"
+
+#CHECK: ARE THERE OTHER SHELLS? (PTS)
+if [[ "${#LIST[@]}" -eq 2 && "${LIST[0]}" -eq "${OWN}" && "${LIST[1]}" == "ptmx" ]]; then
+	printf "${BLUE}No other shells${RESET}\n"
+	exit 0
+fi
+
+#----------------------------------------------------------------------
+
+printf "${BLUE}[+] Starting script${RESET}\n\n"
+
+for pts in "${LIST[@]}"; do
+	if [[ "${pts}" -eq "${OWN}" ]]; then
+		printf "${RED}%-22s%s${RESET}\n" "Ignored own pts:" "${pts}"
+	fi
+	if [[ "${pts}" =~ ^[0-9]+$ && "${pts}" -ne "${OWN}" ]]; then
+		if [ -v MESSAGE ]; then
+			if printf "${MESSAGE}" 2>/dev/null >/dev/pts/"${pts}"; then
+				printf "${GREEN}%-22s%s${RESET}\n" "Message send to pts:" "${pts}"
+			else
+				printf "${RED}%-22s%s${RESET}\n" "Error with pts:" "${pts}"
+			fi
+			continue
+		fi
+		if [ -v KILL ]; then
+                        if pkill -9 -t pts/"${pts}" 2>/dev/null; then
+                        	printf "${GREEN}%-22s%s${RESET}\n" "Killed pts:" "${pts}"
+			else
+				printf "${RED}%-22s%s${RESET}\n" "Error with pts:" "${pts}"
+                        fi
+		fi
+	fi
+done
+
+printf "\n${BLUE}[+] Done${RESET}\n"
