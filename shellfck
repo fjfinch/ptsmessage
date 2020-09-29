@@ -7,15 +7,21 @@ readonly GREEN='\033[0;32m'
 readonly RESET='\033[0m'
 
 usage () {
-	echo -e "Usage: $(basename "${0}") [-m|-k] [-a|-s]\n"
-	echo -e "-m:\tmessage pts"
-	echo -e "-k:\tkill pts"
-	echo -e "-a:\t(message/kill) all pts"
-	echo -e "-s:\t(message/kill) selected pts\n"
-	echo -e "-h:\tshow help (this screen)"
+	printf -- "Usage: %s [-m|-k] [-a|-s]\n\n" "$(basename "${0}")"
+	printf -- "-m:\tMessage (Ex. \"Hey\")\n"
+	printf -- "-k:\tKill\n"
+	printf -- "-a:\t.. all pts's\n"
+	printf -- "-s:\t.. selected pts's (Ex. 2,3,4)\n\n"
+	printf -- "-l:\tList all connected pts's\n"
+	printf -- "-h:\tShow help (this screen)\n"
 }
 
-while getopts ":m:kas:h" flag; do
+all_pts () {
+	ALL="$(ls /dev/pts/)"
+	mapfile -t LIST <<< "${ALL}"
+}
+
+while getopts ":m:kas:hl" flag; do
 	case "${flag}" in
 		m)
 			readonly MESSAGE="${OPTARG}"
@@ -24,71 +30,71 @@ while getopts ":m:kas:h" flag; do
 			readonly KILL=1
 		;;
 		a)
-			readonly ALL="$(ls /dev/pts/)"
-			LIST=(${ALL})
+			all_pts
 		;;
 		s)
 			readonly SELECTED="${OPTARG}"
-			#LIST=($(echo "${SELECTED}" | tr ',' ' '))
 			IFS="," read -r -a LIST <<< "${SELECTED}"
 		;;
 		h)
                         usage
                         exit 0
 		;;
+		l)
+			all_pts
+			for pts in "${LIST[@]}"; do
+				if [[ "${pts}" =~ ^[0-9]+$ ]]; then
+					printf "/dev/pts/%s\n" "${pts}"
+				fi
+			done
+			exit 0
+		;;
 		\?)
-			echo "Invalid flag: -${OPTARG}" 1>&2
+			printf "Invalid flag: -%s\n" "${OPTARG}" 1>&2
 			usage
 			exit 1
 		;;
 		:)
-			echo "Invalid option: -${OPTARG} requires an argument" 1>&2
+			printf "Invalid option: -%s requires an argument\n" "${OPTARG}" 1>&2
 			usage
 			exit 1
 		;;
 	esac
 done
 
-if [[ (-v MESSAGE && -v KILL) || (-v ALL && -v SELECTED) || (! -v MESSAGE && ! -v KILL) || (! -v ALL && ! -v SELECTED) ]]; then
-	usage
-	exit 1
+if [[ -v MESSAGE && -v KILL || -v ALL && -v SELECTED || ! -v MESSAGE && ! -v KILL || ! -v ALL && ! -v SELECTED ]]; then
+        usage
+        exit 1
 fi
-
-#----------------------------------------------------------------------
 
 #OTHER VARIABLES
 readonly OWN="$(basename "$(tty)")"
-
-#CHECK: ARE THERE OTHER SHELLS? (PTS)
-if [[ "${#LIST[@]}" -eq 2 && "${LIST[0]}" -eq "${OWN}" && "${LIST[1]}" == "ptmx" ]]; then
-	printf "${BLUE}No other shells${RESET}\n"
-	exit 0
-fi
 
 #----------------------------------------------------------------------
 
 printf "${BLUE}[+] Starting script${RESET}\n\n"
 
 for pts in "${LIST[@]}"; do
-	if [[ "${pts}" -eq "${OWN}" ]]; then
-		printf "${RED}%-22s%s${RESET}\n" "Ignored own pts:" "${pts}"
-	fi
-	if [[ "${pts}" =~ ^[0-9]+$ && "${pts}" -ne "${OWN}" ]]; then
-		if [ -v MESSAGE ]; then
-			if printf "${MESSAGE}" 2>/dev/null >/dev/pts/"${pts}"; then
-				printf "${GREEN}%-22s%s${RESET}\n" "Message send to pts:" "${pts}"
-			else
-				printf "${RED}%-22s%s${RESET}\n" "Error with pts:" "${pts}"
+	if [ "${pts}" != "${OWN}" ]; then
+		if [[ "${pts}" =~ ^[0-9]+$ ]]; then
+			if [ -v MESSAGE ]; then
+				if printf "%s" "${MESSAGE}" 2>/dev/null >/dev/pts/"${pts}"; then
+					printf "${GREEN}%-22s%s${RESET}\n" "Message send to pts:" "${pts}"
+				else
+					printf "${RED}%-22s%s${RESET}\n" "Error with pts:" "${pts}"
+				fi
+				continue
 			fi
-			continue
+			if [ -v KILL ]; then
+				if pkill -9 -t pts/"${pts}" 2>/dev/null; then
+					printf "${GREEN}%-22s%s${RESET}\n" "Killed pts:" "${pts}"
+				else
+					printf "${RED}%-22s%s${RESET}\n" "Error with pts:" "${pts}"
+				fi
+			fi
 		fi
-		if [ -v KILL ]; then
-                        if pkill -9 -t pts/"${pts}" 2>/dev/null; then
-                        	printf "${GREEN}%-22s%s${RESET}\n" "Killed pts:" "${pts}"
-			else
-				printf "${RED}%-22s%s${RESET}\n" "Error with pts:" "${pts}"
-                        fi
-		fi
+	else
+		printf "${RED}%-22s%s${RESET}\n" "Ignored own pts:" "${pts}"
 	fi
 done
 
