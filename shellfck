@@ -11,10 +11,11 @@ usage () {
 	echo -e "-m:\tmessage pts"
 	echo -e "-k:\tkill pts"
 	echo -e "-a:\t(message/kill) all pts"
-	echo -e "-s:\t(message/kill) selected pts"
+	echo -e "-s:\t(message/kill) selected pts\n"
+	echo -e "-h:\tshow help (this screen)"
 }
 
-while getopts ":m:kas:" flag; do
+while getopts ":m:kas:h" flag; do
 	case "${flag}" in
 		m)
 			readonly MESSAGE="${OPTARG}"
@@ -30,6 +31,10 @@ while getopts ":m:kas:" flag; do
 			readonly SELECTED="${OPTARG}"
 			#LIST=($(echo "${SELECTED}" | tr ',' ' '))
 			IFS="," read -r -a LIST <<< "${SELECTED}"
+		;;
+		h)
+                        usage
+                        exit 0
 		;;
 		\?)
 			echo "Invalid flag: -${OPTARG}" 1>&2
