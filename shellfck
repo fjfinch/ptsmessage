@@ -1,30 +1,33 @@
 #!/bin/bash
 
-# ToDo
-# find better way to kill shell/pts
-#	problem is knowing when a shell is down, instead of other processes
-
 #COLORED OUTPUT
 readonly RED='\033[0;31m'
 readonly BLUE='\033[1;36m'
 readonly GREEN='\033[0;32m'
 readonly RESET='\033[0m'
 
+#FUNCTION OUTPUT USAGE
 usage () {
-	printf -- "Usage: %s [-m|-k] [-a|-s]\n\n" "$(basename "${0}")"
-	printf -- "-m:\tMessage (Ex. \"Hey\")\n"
-	printf -- "-k:\tKill\n"
-	printf -- "-a:\t.. all pts's\n"
-	printf -- "-s:\t.. selected pts's (Ex. 2,3,4)\n\n"
-	printf -- "-l:\tList all connected pts's\n"
-	printf -- "-h:\tShow help (this screen)\n"
+	printf -- "Usage: %s [-m|-k] [-a|-s]\n" "$(basename "${0}")"
+	printf -- "  -m:\tMessage (Ex. \"Hey\")\n"
+	printf -- "  -k:\tKill\n"
+	printf -- "  -a:\t.. all pts's\n"
+	printf -- "  -s:\t.. selected pts's (Ex. 2,3,4)\n\n"
+	printf -- "  -l:\tList all connected pts's\n"
+	printf -- "  -h:\tShow help (this screen)\n"
 }
 
+#FUNCTION LIST ALL CONNECTED PTS'S + SAVED IN ARRAY
 all_pts () {
 	ALL="$(ls /dev/pts/)"
 	mapfile -t LIST <<< "${ALL}"
 }
 
+get_own () {
+	OWN="$(basename "$(tty)")"
+}
+
+#PROGRAM FLAG SUPPORT
 while getopts ":m:kas:hl" flag; do
 	case "${flag}" in
 		m)
@@ -46,33 +49,40 @@ while getopts ":m:kas:hl" flag; do
 		;;
 		l)
 			all_pts
+			get_own
 			for pts in "${LIST[@]}"; do
 				if [[ "${pts}" =~ ^[0-9]+$ ]]; then
+					if [ "${pts}" == "${OWN}" ];then
+						printf "/dev/pts/%s (Own pts)\n" "${pts}"
+						continue
+					fi
 					printf "/dev/pts/%s\n" "${pts}"
 				fi
 			done
 			exit 0
 		;;
 		\?)
-			printf "Invalid flag: -%s\n" "${OPTARG}" 1>&2
+			printf "Invalid flag: -%s\n\n" "${OPTARG}"
 			usage
 			exit 1
 		;;
 		:)
-			printf "Invalid option: -%s requires an argument\n" "${OPTARG}" 1>&2
+			printf "Missing argument for flag: -%s\n\n" "${OPTARG}"
 			usage
 			exit 1
 		;;
 	esac
 done
 
+#EXTRA FLAG LOGIC
 if [[ -v MESSAGE && -v KILL || -v ALL && -v SELECTED || ! -v MESSAGE && ! -v KILL || ! -v ALL && ! -v SELECTED ]]; then
         usage
         exit 1
 fi
 
 #OTHER VARIABLES
-readonly OWN="$(basename "$(tty)")"
+#readonly OWN="$(basename "$(tty)")"
+get_own
 
 #----------------------------------------------------------------------
 
@@ -90,7 +100,6 @@ for pts in "${LIST[@]}"; do
 				continue
 			fi
 			if [ -v KILL ]; then
-				#error="$(pkill -1 -t pts/"${pts}" 2>&1)"
 				if kill -1 "$(ps --no-headers -ft pts/"${pts}" 2>/dev/null | awk '{print $2;exit}')" 2>/dev/null; then
 					printf "${GREEN}%-22s%s${RESET}\n" "Killed pts:" "${pts}"
 				else
