@@ -8,22 +8,23 @@ readonly RESET='\033[0m'
 
 #FUNCTION OUTPUT USAGE
 usage () {
-	printf -- "Usage: %s [-m|-k] [-a|-s]\n" "$(basename "${0}")"
-	printf -- "  -m:\tMessage (Ex. \"Hey\")\n"
-	printf -- "  -k:\tKill\n"
+	printf -- "Usage: %s [-m|-k] [-a|-s]\n\n" "$(basename "${0}")"
+	printf -- "  -m:\tMessage ..\t\tEx. \"Hey how are you\"\n"
+	printf -- "  -k:\tKill ..\n"
 	printf -- "  -a:\t.. all pts's\n"
-	printf -- "  -s:\t.. selected pts's (Ex. 2,3,4)\n\n"
+	printf -- "  -s:\t.. selected pts's\tEx. 1,3,7\n\n"
 	printf -- "  -l:\tList all connected pts's\n"
 	printf -- "  -h:\tShow help (this screen)\n"
 }
 
-#FUNCTION LIST ALL CONNECTED PTS'S + SAVED IN ARRAY
-all_pts () {
+#FUNCTION LIST ALL CONNECTED PTS'S
+get_all_pts () {
 	ALL="$(ls /dev/pts/)"
 	mapfile -t LIST <<< "${ALL}"
 }
 
-get_own () {
+#FUNCTION GET OWN PTS
+get_own_pts () {
 	OWN="$(basename "$(tty)")"
 }
 
@@ -37,7 +38,7 @@ while getopts ":m:kas:hl" flag; do
 			readonly KILL=1
 		;;
 		a)
-			all_pts
+			get_all_pts
 		;;
 		s)
 			readonly SELECTED="${OPTARG}"
@@ -48,26 +49,26 @@ while getopts ":m:kas:hl" flag; do
                         exit 0
 		;;
 		l)
-			all_pts
-			get_own
+			get_all_pts
+			get_own_pts
 			for pts in "${LIST[@]}"; do
 				if [[ "${pts}" =~ ^[0-9]+$ ]]; then
 					if [ "${pts}" == "${OWN}" ];then
-						printf "/dev/pts/%s (Own pts)\n" "${pts}"
-						continue
+						extra=" (this pts)"
 					fi
-					printf "/dev/pts/%s\n" "${pts}"
+					printf "${GREEN}/dev/pts/%s%s${RESET}\n" "${pts}" "${extra}"
+					unset extra
 				fi
 			done
 			exit 0
 		;;
 		\?)
-			printf "Invalid flag: -%s\n\n" "${OPTARG}"
+			printf "${RED}Invalid flag: -%s${RESET}\n" "${OPTARG}"
 			usage
 			exit 1
 		;;
 		:)
-			printf "Missing argument for flag: -%s\n\n" "${OPTARG}"
+			printf "${RED}Missing argument for flag: -%s${RESET}\n" "${OPTARG}"
 			usage
 			exit 1
 		;;
@@ -76,15 +77,21 @@ done
 
 #EXTRA FLAG LOGIC
 if [[ -v MESSAGE && -v KILL || -v ALL && -v SELECTED || ! -v MESSAGE && ! -v KILL || ! -v ALL && ! -v SELECTED ]]; then
-        usage
-        exit 1
+	printf "${RED}Missing or wrong flag combinations${RESET}\n"
+	usage
+	exit 1
 fi
 
 #OTHER VARIABLES
-#readonly OWN="$(basename "$(tty)")"
-get_own
+get_own_pts
 
 #----------------------------------------------------------------------
+
+readonly SPACING=22
+
+error_message () {
+	printf "${RED}%-${SPACING}s%s${RESET}\n" "Error with pts:" "${1}"
+}
 
 printf "${BLUE}[+] Starting script${RESET}\n\n"
 
@@ -93,22 +100,22 @@ for pts in "${LIST[@]}"; do
 		if [[ "${pts}" =~ ^[0-9]+$ ]]; then
 			if [ -v MESSAGE ]; then
 				if printf "%s" "${MESSAGE}" 2>/dev/null >/dev/pts/"${pts}"; then
-					printf "${GREEN}%-22s%s${RESET}\n" "Message send to pts:" "${pts}"
+					printf "${GREEN}%-${SPACING}s%s${RESET}\n" "Message send to pts:" "${pts}"
 				else
-					printf "${RED}%-22s%s${RESET}\n" "Error with pts:" "${pts}"
+					error_message "${pts}"
 				fi
 				continue
 			fi
 			if [ -v KILL ]; then
 				if kill -1 "$(ps --no-headers -ft pts/"${pts}" 2>/dev/null | awk '{print $2;exit}')" 2>/dev/null; then
-					printf "${GREEN}%-22s%s${RESET}\n" "Killed pts:" "${pts}"
+					printf "${GREEN}%-${SPACING}s%s${RESET}\n" "Killed pts:" "${pts}"
 				else
-					printf "${RED}%-22s%s${RESET}\n" "Error with pts:" "${pts}"
+					error_message "${pts}"
 				fi
 			fi
 		fi
 	else
-		printf "${RED}%-22s%s${RESET}\n" "Ignored own pts:" "${pts}"
+		printf "${RED}%-${SPACING}s%s${RESET}\n" "Ignored own pts:" "${pts}"
 	fi
 done
 
