@@ -9,9 +9,9 @@ readonly RESET='\033[0m'
 #FUNCTION OUTPUT USAGE
 usage () {
 	printf -- "Usage: %s [-m|-k] [-a|-s]\n\n" "$(basename "${0}")"
+        printf -- "  -k:\tKill ..\n"
 	printf -- "  -m:\tMessage ..\t\tEx. \"Hey how are you\"\n"
-	printf -- "  -k:\tKill ..\n"
-	printf -- "  -a:\t.. all pts's\n"
+        printf -- "  -a:\t.. all pts's\n"
 	printf -- "  -s:\t.. selected pts's\tEx. 1,3,7\n\n"
 	printf -- "  -l:\tList all connected pts's\n"
 	printf -- "  -h:\tShow help (this screen)\n"
