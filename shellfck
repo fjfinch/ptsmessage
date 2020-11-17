@@ -8,7 +8,7 @@ readonly RESET='\033[0m'
 
 #FUNCTION OUTPUT USAGE
 usage () {
-	printf -- "Usage: %s [-m|-k] [-a|-s]\n\n" "$(basename "${0}")"
+	printf -- "Usage: %s [-k|-m] [-a|-s]\n\n" "$(basename "${0}")"
         printf -- "  -k:\tKill ..\n"
 	printf -- "  -m:\tMessage ..\t\tEx. \"Hey how are you\"\n"
         printf -- "  -a:\t.. all pts's\n"
