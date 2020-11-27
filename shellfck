@@ -4,7 +4,9 @@
 readonly RED='\033[0;31m'
 readonly BLUE='\033[1;36m'
 readonly GREEN='\033[0;32m'
+readonly GREEN_ITALIC='\033[3;32m'
 readonly RESET='\033[0m'
+
 
 #FUNCTION OUTPUT USAGE
 usage () {
@@ -51,12 +53,17 @@ while getopts ":m:kas:hl" flag; do
 		l)
 			get_all_pts
 			get_own_pts
+			printf "${GREEN_ITALIC}%-10s%s${RESET}\n" "PTS" "IP"
 			for pts in "${LIST[@]}"; do
 				if [[ "${pts}" =~ ^[0-9]+$ ]]; then
 					if [ "${pts}" == "${OWN}" ];then
 						extra=" (this pts)"
 					fi
-					printf "${GREEN}/dev/pts/%s%s${RESET}\n" "${pts}" "${extra}"
+					ip="$(who --ips | grep "pts/${pts}" | awk '{print $5}')"
+					if [ -z "${ip}" ]; then
+						ip="N/A"
+					fi
+					printf "${GREEN}pts/%-6s%s %s${RESET}\n" "${pts}" "${ip}" "${extra}"
 					unset extra
 				fi
 			done
