@@ -103,26 +103,27 @@ error_message () {
 printf "${BLUE}[+] Starting script${RESET}\n\n"
 
 for pts in "${LIST[@]}"; do
-	if [ "${pts}" != "${OWN}" ]; then
-		if [[ "${pts}" =~ ^[0-9]+$ ]]; then
-			if [ -v MESSAGE ]; then
-				if printf "%s" "${MESSAGE}" 2>/dev/null >/dev/pts/"${pts}"; then
-					printf "${GREEN}%-${SPACING}s%s${RESET}\n" "Message send to pts:" "${pts}"
-				else
-					error_message "${pts}"
-				fi
-				continue
+	if [ "${pts}" == "${OWN}" ]; then
+		printf "${RED}%-${SPACING}s%s${RESET}\n" "Ignored own pts:" "${pts}"
+		continue
+	fi
+
+	if [[ "${pts}" =~ ^[0-9]+$ ]]; then
+		if [ -v MESSAGE ]; then
+			if printf "%s" "${MESSAGE}" 2>/dev/null >/dev/pts/"${pts}"; then
+				printf "${GREEN}%-${SPACING}s%s${RESET}\n" "Message send to pts:" "${pts}"
+			else
+				error_message "${pts}"
 			fi
-			if [ -v KILL ]; then
-				if kill -1 "$(ps --no-headers -ft pts/"${pts}" 2>/dev/null | awk '{print $2;exit}')" 2>/dev/null; then
-					printf "${GREEN}%-${SPACING}s%s${RESET}\n" "Killed pts:" "${pts}"
-				else
-					error_message "${pts}"
-				fi
+			continue #just stop the rest
+		fi
+		if [ -v KILL ]; then
+			if kill -1 "$(ps --no-headers -ft pts/"${pts}" 2>/dev/null | awk '{print $2;exit}')" 2>/dev/null; then
+				printf "${GREEN}%-${SPACING}s%s${RESET}\n" "Killed pts:" "${pts}"
+			else
+				error_message "${pts}"
 			fi
 		fi
-	else
-		printf "${RED}%-${SPACING}s%s${RESET}\n" "Ignored own pts:" "${pts}"
 	fi
 done
 
