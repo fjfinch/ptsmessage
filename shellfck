@@ -47,7 +47,7 @@ while getopts ":m:kas:hl" flag; do
 		l)
 			get_all_pts
 			get_own_pts
-			printf "%b%-10sIP%b\n" "${GREEN_ITALIC}" "PTS" "${RESET}"
+			printf "${GREEN_ITALIC}%-10sIP${RESET}\n" "PTS"
 			for pts in "${LIST[@]}"; do
 				if [[ "${pts}" =~ ^[0-9]+$ ]]; then
 					if [ "${pts}" == "${OWN}" ];then
@@ -57,19 +57,19 @@ while getopts ":m:kas:hl" flag; do
 					if [ -z "${ip}" ]; then
 						ip="N/A"
 					fi
-					printf "%bpts/%-6s%s %s%b\n" "${GREEN}" "${pts}" "${ip}" "${extra}" "${RESET}"
+					printf "${GREEN}pts/%-6s%s %s${RESET}\n" "${pts}" "${ip}" "${extra}"
 					unset extra
 				fi
 			done
 			exit 0
 		;;
 		\?)
-			printf "%bInvalid flag: -%s%b\n" "${RED}" "${OPTARG}" "${RESET}"
+			printf "${RED}Invalid flag: -%s${RESET}\n" "${OPTARG}"
 			usage
 			exit 1
 		;;
 		:)
-			printf "%bMissing argument for flag: -%s%b\n" "${RED}" "${OPTARG}" "${RESET}"
+			printf "${RED}Missing argument for flag: -%s${RESET}\n" "${OPTARG}"
 			usage
 			exit 1
 		;;
@@ -77,7 +77,7 @@ while getopts ":m:kas:hl" flag; do
 done
 
 if [[ -v MESSAGE && -v KILL || -v ALL && -v SELECTED || ! -v MESSAGE && ! -v KILL || ! -v ALL && ! -v SELECTED ]]; then
-	printf "%bMissing or wrong flag combinations%b\n" "${RED}" "${RESET}"
+	printf "${RED}Missing or wrong flag combinations${RESET}\n"
 	usage
 	exit 1
 fi
@@ -87,23 +87,23 @@ get_own_pts
 SPACING=22
 
 error_message () {
-	printf "%b%-${SPACING}s%s%b\n" "${RED}" "Error with pts:" "${1}" "${RESET}"
+	printf "${RED}%-${SPACING}s%s${RESET}\n" "Error with pts:" "${1}"
 }
 
 #----------------------------------------------------------------------
 
-printf "%b[+] Running script%b\n\n" "${BLUE}" "${RESET}"
+printf "${BLUE}[+] Running script${RESET}\n\n"
 
 for pts in "${LIST[@]}"; do
 	if [ "${pts}" == "${OWN}" ]; then
-		printf "%b%-${SPACING}s%s%b\n" "${RED}" "Ignored own pts:" "${pts}" "${RESET}"
+		printf "${RED}%-${SPACING}s%s${RESET}\n" "Ignored own pts:" "${pts}"
 		continue
 	fi
 
 	if [[ "${pts}" =~ ^[0-9]+$ ]]; then
 		if [ -v MESSAGE ]; then
 			if printf "%s" "${MESSAGE}" 2>/dev/null >/dev/pts/"${pts}"; then
-				printf "%b%-${SPACING}s%s%b\n" "${GREEN}" "Message send to pts:" "${pts}" "${RESET}"
+				printf "${GREEN}%-${SPACING}s%s${RESET}\n" "Message send to pts:" "${pts}"
 			else
 				error_message "${pts}"
 			fi
@@ -111,7 +111,7 @@ for pts in "${LIST[@]}"; do
 		fi
 		if [ -v KILL ]; then
 			if kill -1 "$(ps --no-headers -ft pts/"${pts}" 2>/dev/null | awk '{print $2;exit}')" 2>/dev/null; then
-				printf "%b%-${SPACING}s%s%b\n" "${GREEN}" "Killed pts:" "${pts}" "${RESET}"
+				printf "${GREEN}%-${SPACING}s%s${RESET}\n" "Killed pts:" "${pts}"
 			else
 				error_message "${pts}"
 			fi
@@ -119,4 +119,4 @@ for pts in "${LIST[@]}"; do
 	fi
 done
 
-printf "\n%b[+] Done%b\n" "${BLUE}" "${RESET}"
+printf "\n${BLUE}[+] Done${RESET}\n"
