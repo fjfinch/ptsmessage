@@ -1,7 +1,7 @@
 # shellfck
 Small bash script to send messages to, or kill, a shell on a linux machine.
 
-# Run
+## Run
 This script needs two flags. An action and a destination. Usage: `bash shellfck [-k|-m] [-a|-s]`
 
 ```
